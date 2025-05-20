@@ -17,12 +17,12 @@ wait_for_topics() {
     echo "🔎 Esperando a que los topics estén disponibles..."
 
     for i in {1..60}; do
-        # HAS_IMAGE=$(ros2 topic list 2>/dev/null | grep -q "/image_compressed" && echo "1" || echo "0")
+        HAS_IMAGE=$(ros2 topic list 2>/dev/null | grep -q "/image_compressed" && echo "1" || echo "0")
         HAS_LIVOX=$(ros2 topic list 2>/dev/null | grep -q "/livox/lidar" && echo "1" || echo "0")
 
-        if [[ "$HAS_LIVOX" == "1" ]]; then  # "$HAS_IMAGE" == "1" &&
+        if [[ "$HAS_IMAGE" == "1" && "$HAS_LIVOX" == "1" ]]; then
             echo "✅ Ambos topics disponibles"
-            sleep 5
+            sleep 3
             return 0
         fi
 
@@ -92,7 +92,8 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
             sudo fuser -k 7447/tcp
             export RMW_IMPLEMENTATION=rmw_zenoh_cpp
             export ZENOH_ROUTER_CONFIG_URI=$HOME/zenoh_test/Config/router_config_PC.json5
-            export ZENOH_ROUTER_CHECK_ATTEMPTS=0
+            export ZENOH_ROUTER_CHECK_ATTEMPTS=
+            export ZENOH_SESSION_CONFIG_URI=
             sleep 1
             cd ~/ros2_ws
             source install/setup.zsh
@@ -106,8 +107,9 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
             echo "🚀 Iniciando Zenoh con configuración $CONFIG..."
             sudo fuser -k 7447/tcp
             export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-            export ZENOH_ROUTER_CHECK_ATTEMPTS=0
-            # export ZENOH_ROUTER_CONFIG_URI=$HOME/zenoh_test/Config/router_config_PC.json5
+            export ZENOH_ROUTER_CONFIG_URI=$HOME/zenoh_test/Config/router_config_PC.json5
+            export ZENOH_ROUTER_CHECK_ATTEMPTS=
+            export ZENOH_SESSION_CONFIG_URI=
             sleep 1
             cd ~/ros2_ws
             source install/setup.zsh
@@ -120,8 +122,9 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
             sudo fuser -k 7447/tcp
             sleep 1
             export RMW_IMPLEMENTATION=rmw_zenoh_cpp
-            export ZENOH_SESSION_CONFIG_URI=$HOME/zenoh_test/Config/session_config_no_router_PC.json5
+            export ZENOH_ROUTER_CONFIG_URI=
             export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+            export ZENOH_SESSION_CONFIG_URI=$HOME/zenoh_test/Config/session_config_no_router_PC.json5
             ;;
     esac
 
@@ -134,24 +137,6 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
         echo "⚠️ Saltando $CONFIG por timeout en topics"
         continue
     fi
-
-    # sleep 4
-    echo "📏 Midiendo frecuencia y delay de la imagen..."
-    timeout ${DURATION}s ros2 topic hz /image_compressed -w 30 | tee "$LOG_DIR/${CONFIG}_image_hz.txt" &
-    HZ_IMAGE_PID=$!
-    echo "📏 Midiendo frecuencia y delay del lidar..."
-    timeout ${DURATION}s ros2 topic hz /livox/lidar -w 30 | tee "$LOG_DIR/${CONFIG}_lidar_hz.txt" &
-    HZ_LIDAR_PID=$!
-
-    timeout ${DURATION}s ros2 topic delay /image_compressed -w 30 | tee "$LOG_DIR/${CONFIG}_image_delay.txt" &
-    DELAY_IMAGE_PID=$!
-    timeout ${DURATION}s ros2 topic delay /livox/lidar -w 30 | tee "$LOG_DIR/${CONFIG}_lidar_delay.txt" &
-    DELAY_LIDAR_PID=$!
-
-    timeout ${DURATION}s ros2 topic bw /image_compressed | tee "$LOG_DIR/${CONFIG}_image_bw.txt" &
-    BW_IMAGE_PID=$!
-    timeout ${DURATION}s ros2 topic bw /livox/lidar | tee "$LOG_DIR/${CONFIG}_lidar_bw.txt" &
-    BW_LIDAR_PID=$!
 
     # Lanzamos subscriber de imágenes
     echo "🚀 Lanzando nodo de imágenes..."
@@ -207,7 +192,23 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
         fi
     ) &
 
+    sleep 4
+    echo "📏 Midiendo frecuencia y delay de la imagen..."
+    timeout ${DURATION}s ros2 topic hz /image_compressed -w 30 | tee "$LOG_DIR/${CONFIG}_image_hz.txt" &
+    HZ_IMAGE_PID=$!
+    echo "📏 Midiendo frecuencia y delay del lidar..."
+    timeout ${DURATION}s ros2 topic hz /livox/lidar -w 30 | tee "$LOG_DIR/${CONFIG}_lidar_hz.txt" &
+    HZ_LIDAR_PID=$!
 
+    timeout ${DURATION}s ros2 topic delay /image_compressed -w 30 | tee "$LOG_DIR/${CONFIG}_image_delay.txt" &
+    DELAY_IMAGE_PID=$!
+    timeout ${DURATION}s ros2 topic delay /livox/lidar -w 30 | tee "$LOG_DIR/${CONFIG}_lidar_delay.txt" &
+    DELAY_LIDAR_PID=$!
+
+    timeout ${DURATION}s ros2 topic bw /image_compressed | tee "$LOG_DIR/${CONFIG}_image_bw.txt" &
+    BW_IMAGE_PID=$!
+    timeout ${DURATION}s ros2 topic bw /livox/lidar | tee "$LOG_DIR/${CONFIG}_lidar_bw.txt" &
+    BW_LIDAR_PID=$!
 
     # Esperar a que se complete el tiempo
     wait $HZ_IMAGE_PID

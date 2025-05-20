@@ -447,14 +447,14 @@
           /// then amount of memory being allocated for each queue is SIZE_XXX * LINK_MTU.
           /// If qos is false, then only the DATA priority will be allocated.
           size: {
-            control: 2,
-            real_time: 2,
-            interactive_high: 2,
-            interactive_low: 2,
-            data_high: 2,
-            data: 2,
-            data_low: 2,
-            background: 2,
+            control: 8,
+            real_time: 8,
+            interactive_high: 8,
+            interactive_low: 8,
+            data_high: 8,
+            data: 8,
+            data_low: 8,
+            background: 8,
           },
           /// Congestion occurs when the queue is empty (no available batch).
           congestion_control: {
@@ -497,12 +497,13 @@
         /// For very high throughput scenarios, the rx_buffer_size can be increased to accommodate
         /// more in-flight data. This is particularly relevant when dealing with large messages.
         /// E.g. for 16MiB rx_buffer_size set the value to: 16777216.
-        buffer_size: 65535,
+        // buffer_size: 65535,
+        buffer_size: 16777216,
         /// Maximum size of the defragmentation buffer at receiver end.
         /// Fragmented messages that are larger than the configured size will be dropped.
         /// The default value is 1GiB. This would work in most scenarios.
         /// NOTE: reduce the value if you are operating on a memory constrained device.
-        max_message_size: 1073741824,
+        max_message_size: 16777216,
       },
       /// Configure TLS specific parameters
       tls: {

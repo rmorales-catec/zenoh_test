@@ -19,8 +19,10 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
             # Iniciar Zenoh
             echo "🚀 Iniciando Zenoh con configuración $CONFIG..."
             sudo fuser -k 7447/tcp
+            export RMW_IMPLEMENTATION=rmw_zenoh_cpp
             export ZENOH_ROUTER_CONFIG_URI=$HOME/zenoh_test/Config/router_config_raspy.json5
-            export ZENOH_ROUTER_CHECK_ATTEMPTS=0
+            export ZENOH_ROUTER_CHECK_ATTEMPTS=
+            export ZENOH_SESSION_CONFIG_URI=
             ros2 run rmw_zenoh_cpp rmw_zenohd &
             ZENOH_PID=$!
             sleep 2            
@@ -30,15 +32,19 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
             # Iniciar Zenoh
             echo "🚀 Iniciando Zenoh con configuración $CONFIG..."
             sudo fuser -k 7447/tcp
+            export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+            export ZENOH_ROUTER_CONFIG_URI=
+            export ZENOH_ROUTER_CHECK_ATTEMPTS=
             export ZENOH_SESSION_CONFIG_URI=$HOME/zenoh_test/Config/session_config_router_raspy.json5
-            export ZENOH_ROUTER_CHECK_ATTEMPTS=0
             sleep 2  
             ;;
         "peer_to_peer")
             echo "🔧 Configurando para conexión peer-to-peer..."
             sudo fuser -k 7447/tcp
-            export ZENOH_SESSION_CONFIG_URI=$HOME/zenoh_test/Config/session_config_no_router_raspy.json5
+            export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+            export ZENOH_ROUTER_CONFIG_URI=
             export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+            export ZENOH_SESSION_CONFIG_URI=$HOME/zenoh_test/Config/session_config_no_router_raspy.json5
             ;;
     esac
 
@@ -54,7 +60,6 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
     LIVOX_PID=$!
     sleep 5  # tiempo para que inicien
     echo "Nodo de LiDAR ejecutandose"
-    sleep 5
 
     # Lanzar nodos en background
     echo "🚀 Lanzando nodos con $CONFIG..."
@@ -66,7 +71,7 @@ for CONFIG in "${NETWORK_CONFIGS[@]}"; do
     sleep 2  # tiempo para que inicien
     echo "Nodo de imagenes ejecutandose"
 
-    sleep 30
+    sleep 35
 
     # Finalizar nodos
     echo "🛑 Matando nodos..."
